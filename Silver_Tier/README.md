@@ -1,5 +1,20 @@
 # 🥈 Silver Tier - Functional Assistant
 
+## Quick Setup (After Cloning)
+```bash
+# 1. Install dependencies
+pip install -r requirements.txt
+
+# 2. Install Playwright browser
+playwright install chromium
+
+# 3. Authenticate Gmail (opens browser - login with YOUR Google account)
+python scripts/gmail_watcher.py
+
+# 4. WhatsApp session (first time - scan QR with phone)
+python scripts/whatsapp_watcher.py
+```
+
 ## Overview
 Silver Tier builds on Bronze with multiple watchers, approval workflow, and enhanced automation.
 

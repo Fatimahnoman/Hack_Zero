@@ -1,0 +1,1 @@
+# Bronze Tier has no extra dependencies (uses only Python stdlib)
