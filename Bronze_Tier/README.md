@@ -1,5 +1,13 @@
 # 🥉 Bronze Tier - Foundation
 
+## Quick Setup (After Cloning)
+Bronze Tier uses only Python standard library — no extra dependencies needed.
+```bash
+# Just run the orchestrator
+cd Bronze_Tier/scripts
+python orchestrator.py --continuous
+```
+
 ## Overview
 This is the Bronze Tier implementation of the Personal AI Employee.
 

@@ -1,19 +1,37 @@
 # 🥈 Silver Tier - Functional Assistant
 
 ## Quick Setup (After Cloning)
+
+### 1. Install Dependencies
 ```bash
-# 1. Install dependencies
 pip install -r requirements.txt
-
-# 2. Install Playwright browser
 playwright install chromium
-
-# 3. Authenticate Gmail (opens browser - login with YOUR Google account)
-python scripts/gmail_watcher.py
-
-# 4. WhatsApp session (first time - scan QR with phone)
-python scripts/whatsapp_watcher.py
 ```
+
+### 2. Get Your Own credentials.json (Required for Gmail)
+This repo does NOT include credentials.json for security reasons. Create your own:
+
+1. Go to https://console.cloud.google.com/apis/credentials
+2. Create a project (or select existing)
+3. Click **"+ Create Credentials"** → **"OAuth client ID"**
+4. Application type: **"Desktop app"**
+5. Name it (e.g., "AI Employee")
+6. Click **"Download JSON"** → save as `credentials.json`
+7. Place it in: `Silver_Tier/credentials.json`
+8. Also enable Gmail API: https://console.cloud.google.com/apis/library/gmail.googleapis.com
+
+### 3. Authenticate Gmail
+```bash
+cd Silver_Tier/scripts
+python gmail_watcher.py
+```
+Browser opens → login with YOUR Google account → grant read + send access.
+
+### 4. WhatsApp Session (First Time)
+```bash
+python whatsapp_watcher.py
+```
+WhatsApp Web opens → scan QR code with phone → session saved automatically.
 
 ## Overview
 Silver Tier builds on Bronze with multiple watchers, approval workflow, and enhanced automation.
