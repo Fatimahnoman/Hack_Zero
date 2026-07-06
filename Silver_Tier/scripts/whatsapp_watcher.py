@@ -142,13 +142,15 @@ def main():
             context = p.chromium.launch_persistent_context(
                 user_data_dir=str(SESSION_PATH),
                 headless=False,
+                no_viewport=True,
                 args=[
                     "--disable-blink-features=AutomationControlled",
                     "--no-sandbox",
                     "--disable-dev-shm-usage",
-                    "--remote-debugging-port=9223"
+                    "--remote-debugging-port=9223",
+                    "--start-maximized"
                 ],
-                viewport={"width": 1280, "height": 720}
+
             )
 
             page = context.pages[0] if context.pages else context.new_page()
