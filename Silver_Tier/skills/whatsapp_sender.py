@@ -79,15 +79,17 @@ def send_whatsapp_message(target_contact: str, message_text: str) -> bool:
             
             # Find search box
             search_selectors = [
-                'input[placeholder="Search or start a new chat"]',
-                'div[contenteditable="true"]'
+                'div[contenteditable="true"][spellcheck="true"]',
+                'div[contenteditable="true"]',
+                'input[placeholder*="Search"]',
+                'input[type="text"]'
             ]
             
             search_box = None
             for sel in search_selectors:
                 try:
                     locator = wa_page.locator(sel).first
-                    locator.wait_for(state='visible', timeout=8000)
+                    locator.wait_for(state='visible', timeout=5000)
                     search_box = locator
                     break
                 except:
@@ -114,20 +116,38 @@ def send_whatsapp_message(target_contact: str, message_text: str) -> bool:
             # 5. Locate Message Input
             print(f'[4/5] Locating message input box...')
             
-            # The message input is typically in the footer
-            # Try specific footer selector first
-            message_input = wa_page.locator('footer div[contenteditable="true"]').first
+            # The message input is typically in the footer area with role="textbox"
+            input_selectors = [
+                'footer div[role="textbox"]',
+                'footer div[contenteditable="true"]',
+                'div[role="textbox"][contenteditable="true"]',
+                'div[contenteditable="true"][spellcheck="true"]'
+            ]
             
-            try:
-                message_input.wait_for(state='visible', timeout=10000)
-                print('      ✅ Found message input box (footer)')
-            except:
-                # Fallback to generic contenteditable
-                print('      ⚠️  Footer selector failed, trying generic...')
-                # Use .first because the last one might be hidden or search box
-                message_input = wa_page.locator('div[contenteditable="true"]').first
-                message_input.wait_for(state='visible', timeout=10000)
-                print('      ✅ Found message input box (generic)')
+            message_input = None
+            for sel in input_selectors:
+                try:
+                    locator = wa_page.locator(sel).last
+                    locator.wait_for(state='visible', timeout=3000)
+                    message_input = locator
+                    break
+                except:
+                    continue
+            
+            if not message_input:
+                print('      ⚠️  Could not find message input with specific selectors')
+                print('      Trying last contenteditable div...')
+                try:
+                    count = wa_page.locator('div[contenteditable="true"]').count()
+                    if count >= 2:
+                        message_input = wa_page.locator('div[contenteditable="true"]').nth(count - 1)
+                    else:
+                        message_input = wa_page.locator('div[contenteditable="true"]').first
+                    message_input.wait_for(state='visible', timeout=5000)
+                    print(f'      ✅ Found message input box (last of {count} contenteditable divs)')
+                except:
+                    print('      ❌ Could not find message input')
+                    return False
             
             # 6. Send Message
             print(f'[5/5] Sending message...')

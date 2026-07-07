@@ -41,6 +41,7 @@ INBOX_FOLDER = PROJECT_ROOT / "Inbox"
 NEEDS_ACTION_FOLDER = PROJECT_ROOT / "Needs_Action"
 LOGS_FOLDER = PROJECT_ROOT / "Logs"
 LOG_FILE = LOGS_FOLDER / "gmail_watcher.log"
+PROCESSED_FILE = LOGS_FOLDER / "gmail_processed.ids"
 CHECK_INTERVAL = 60  # seconds
 STATUS_INTERVAL = 30  # seconds
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.send"]
@@ -92,6 +93,19 @@ def decode_message(message: str) -> str:
         logger.error(f"Error decoding message: {e}")
         return ""
 
+
+def load_processed() -> set:
+    processed = set()
+    if PROCESSED_FILE.exists():
+        try:
+            processed = set(PROCESSED_FILE.read_text().splitlines())
+        except:
+            pass
+    return processed
+
+def save_processed(msg_id: str):
+    with open(PROCESSED_FILE, "a", encoding="utf-8") as f:
+        f.write(f"{msg_id}\n")
 
 def extract_email_data(msg: dict) -> dict:
     """Extract relevant data from Gmail message."""
@@ -205,7 +219,7 @@ def authenticate_gmail():
         with open(TOKEN_FILE, "w", encoding="utf-8") as f:
             f.write(creds.to_json())
         logger.info("Credentials saved to token.json")
-        print("✅ Authentication successful! Token saved.")
+        print("[OK] Authentication successful! Token saved.")
 
     return build("gmail", "v1", credentials=creds)
 
@@ -257,6 +271,8 @@ def check_gmail(service, processed_ids: set) -> int:
                 print(f"     Priority: {get_priority(email_data['subject'], email_data['snippet'])}")
                 new_count += 1
 
+                # Save to persistent processed list
+                save_processed(msg_id)
                 # Add to processed set
                 processed_ids.add(msg_id)
 
@@ -331,8 +347,9 @@ def main():
         print("3. Check that Gmail API is enabled in Google Cloud Console")
         sys.exit(1)
 
-    # Track processed message IDs
-    processed_ids = set()
+    # Track processed message IDs (persistent)
+    processed_ids = load_processed()
+    logger.info(f"Loaded {len(processed_ids)} previously processed message IDs")
 
     logger.info("Watcher started successfully!")
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Watcher started successfully!")

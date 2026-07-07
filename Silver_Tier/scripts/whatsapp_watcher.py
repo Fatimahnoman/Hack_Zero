@@ -3,7 +3,7 @@ WhatsApp Watcher - Silver Tier (Simple Detection Only)
 ======================================================
 Only monitors WhatsApp Web for unread messages with keywords.
 Creates files in Inbox/ folder.
-Orchestrator handles: Needs_Action → Plans → Pending_Approval → Approved → Done
+Orchestrator handles: Needs_Action -> Plans -> Pending_Approval -> Approved -> Done
 
 Run: python scripts/whatsapp_watcher.py
 """
@@ -125,10 +125,10 @@ def main():
     print(f"Check interval: {CHECK_INTERVAL}s")
     print("-" * 60)
     print("WORKFLOW:")
-    print("  1. This watcher detects messages → Creates files in Inbox/")
-    print("  2. Orchestrator processes: Inbox → Needs_Action → Plans → Pending_Approval")
-    print("  3. Human approves → Approved/")
-    print("  4. Orchestrator sends via MCP → Done/")
+    print("  1. This watcher detects messages -> Creates files in Inbox/")
+    print("  2. Orchestrator processes: Inbox -> Needs_Action -> Plans -> Pending_Approval")
+    print("  3. Human approves -> Approved/")
+    print("  4. Orchestrator sends via MCP -> Done/")
     print("=" * 60)
 
     load_processed()
@@ -167,35 +167,35 @@ def main():
                 intro = page.query_selector('[data-testid="intro"]')
                 if intro:
                     print(f"\n{'='*60}")
-                    print("📱 FIRST TIME SETUP - QR CODE SCAN REQUIRED")
+                    print("[QR] FIRST TIME SETUP - QR CODE SCAN REQUIRED")
                     print(f"{'='*60}")
                     print("1. Open WhatsApp on your phone")
-                    print("2. Tap Menu (⋮) or Settings")
+                    print("2. Tap Menu or Settings")
                     print("3. Tap Linked Devices")
                     print("4. Tap Link a Device")
                     print("5. Scan the QR code in the browser")
                     print(f"{'='*60}")
-                    print("\n⏳ Waiting 90 seconds for QR scan...")
+                    print("\n[WAIT] Waiting 90 seconds for QR scan...")
                     time.sleep(90)
 
                     intro = page.query_selector('[data-testid="intro"]')
                     if intro:
-                        print("\n❌ QR not scanned. Please scan and restart.")
+                        print("\n[X] QR not scanned. Please scan and restart.")
                         context.close()
                         return
                     else:
-                        print("\n✅ QR scanned successfully!")
-                        print("💾 Session saved automatically!")
+                        print("\n[OK] QR scanned successfully!")
+                        print("[SAVE] Session saved automatically!")
                 else:
-                    print(f"\n✅ WhatsApp session loaded! (Auto-login)")
+                    print(f"\n[OK] WhatsApp session loaded! (Auto-login)")
             except PlaywrightTimeout:
-                print("\n⚠️  Timeout - continuing anyway...")
+                print("\n[!] Timeout - continuing anyway...")
 
             print(f"\n{'='*60}")
-            print(f"✅ [{datetime.now().strftime('%H:%M:%S')}] WhatsApp Watcher STARTED")
-            print(f"🔍 Checking every {CHECK_INTERVAL} seconds")
-            print(f"📥 New messages saved to: {INBOX_FOLDER}")
-            print(f"🛑 Press Ctrl+C to stop")
+            print(f"[OK] [{datetime.now().strftime('%H:%M:%S')}] WhatsApp Watcher STARTED")
+            print(f"[SCAN] Checking every {CHECK_INTERVAL} seconds")
+            print(f"[INBOX] New messages saved to: {INBOX_FOLDER}")
+            print(f"[STOP] Press Ctrl+C to stop")
             print(f"{'='*60}\n")
 
             while True:
@@ -226,79 +226,39 @@ def main():
 
                     for i, chat in enumerate(chats):
                         try:
-                            # Try gridcell approach first
-                            gridcells = chat.query_selector_all('[role="gridcell"]')
-                            
-                            # Fallback: try getting spans directly if gridcells < 3
-                            if len(gridcells) < 3:
-                                unread_badges = chat.query_selector_all('span[data-testid="unread-badge"]')
-                                if unread_badges:
-                                    try:
-                                        name_elem = chat.query_selector('span[title]')
-                                        contact = name_elem.get_attribute('title') if name_elem else f"Unknown_{i}"
-                                        msg_elem = chat.query_selector('span[data-testid="last-message-content"]')
-                                        message = msg_elem.inner_text() if msg_elem else ""
-                                        
-                                        # Check keywords
-                                        msg_lower = message.lower()
-                                        if not any(kw in msg_lower for kw in IMPORTANT_KEYWORDS):
-                                            continue
-                                            
-                                        msg_id = f"{contact}:{message[:50]}"
-                                        if msg_id in processed_messages:
-                                            continue
-                                            
-                                        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                                        filename = create_inbox_file(contact, message, timestamp)
-                                        if filename:
-                                            save_processed(msg_id)
-                                            new_messages += 1
-                                            print(f"[{datetime.now().strftime('%H:%M:%S')}] 📩 New message from: {contact}")
-                                            print(f"   Priority: {get_priority(message)}")
-                                            print(f"   Saved to: Inbox/{filename}")
-                                            print(f"   Message: {message[:80]}...\n")
-                                    except Exception as e:
-                                        continue
+                            # Check for unread count
+                            unread_icon = chat.query_selector('[data-testid="icon-unread-count"]')
+                            if not unread_icon:
                                 continue
 
-                            # Get contact name from Cell 1
-                            cell_1 = gridcells[1]
-                            contact = "Unknown"
-                            name_elem = cell_1.query_selector('span[dir="auto"]')
-                            if name_elem:
-                                contact = name_elem.inner_text() or "Unknown"
-                            if contact == "Unknown":
-                                name_elem = cell_1.query_selector('span[title]')
-                                if name_elem:
-                                    contact = name_elem.get_attribute('title') or "Unknown"
+                            # Get contact name
+                            contact = page.evaluate('''(index) => {
+                                const chats = document.querySelectorAll('#pane-side [role="row"]');
+                                const chat = chats[index];
+                                if (!chat) return "Unknown";
+                                const spans = chat.querySelectorAll('span[title]');
+                                for (const span of spans) {
+                                    const title = span.getAttribute('title');
+                                    if (title && !title.includes('unread')) return title;
+                                }
+                                return "Unknown";
+                            }''', i)
 
-                            # Check unread count in Cell 2
-                            cell_2 = gridcells[2]
-                            cell_2_text = cell_2.inner_text().strip()
-                            if not cell_2_text or not cell_2_text.isdigit():
-                                continue
-
-                            unread_count = int(cell_2_text)
-                            if unread_count == 0:
-                                continue
-
-                            # Get message preview from Cell 0
-                            cell_0 = gridcells[0]
-                            message = ""
-                            msg_elem = cell_0.query_selector('span[data-testid="last-message-content"]')
-                            if msg_elem:
-                                message = msg_elem.inner_text()
-
-                            # Fallback: get longest span text
-                            if not message:
-                                spans = cell_0.query_selector_all('span')
-                                for span in spans:
-                                    try:
-                                        text = span.inner_text()
-                                        if text and len(text) > len(message):
-                                            message = text
-                                    except:
-                                        continue
+                            # Get message text
+                            message = page.evaluate('''(index) => {
+                                const chats = document.querySelectorAll('#pane-side [role="row"]');
+                                const chat = chats[index];
+                                if (!chat) return "";
+                                const el = chat.querySelector('[data-testid="cell-frame-secondary"]');
+                                if (!el) return "";
+                                const spans = el.querySelectorAll('span');
+                                let msg = "";
+                                for (const span of spans) {
+                                    const t = span.innerText.trim();
+                                    if (t && t.length > msg.length) msg = t;
+                                }
+                                return msg;
+                            }''', i)
 
                             if not message.strip():
                                 continue
@@ -308,19 +268,16 @@ def main():
                             if not any(kw in msg_lower for kw in IMPORTANT_KEYWORDS):
                                 continue
 
-                            # Create unique ID
                             msg_id = f"{contact}:{message[:50]}"
                             if msg_id in processed_messages:
                                 continue
 
-                            # Create file in Inbox
                             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                             filename = create_inbox_file(contact, message, timestamp)
-
                             if filename:
                                 save_processed(msg_id)
                                 new_messages += 1
-                                print(f"[{datetime.now().strftime('%H:%M:%S')}] 📩 New message from: {contact}")
+                                print(f"[{datetime.now().strftime('%H:%M:%S')}] [MSG] New message from: {contact}")
                                 print(f"   Priority: {get_priority(message)}")
                                 print(f"   Saved to: Inbox/{filename}")
                                 print(f"   Message: {message[:80]}...\n")
@@ -348,10 +305,10 @@ def main():
 
     except KeyboardInterrupt:
         print(f"\n\n{'='*60}")
-        print("⏹️  WhatsApp Watcher Stopped")
+        print("[STOP] WhatsApp Watcher Stopped")
         print(f"{'='*60}")
     except Exception as e:
-        print(f"\n❌ FATAL ERROR: {e}")
+        print(f"\n[X] FATAL ERROR: {e}")
         import traceback
         traceback.print_exc()
     finally:
