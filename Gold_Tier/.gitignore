@@ -16,26 +16,17 @@ cookies_backup.json
 
 # Session & browser data (regenerated on first login)
 golden_tier_external_world/session/
-session/*
-!session/.gitkeep
-
-# Runtime vault (SQLite databases)
+session/
 golden_tier_external_world/vault/
-vault/*
-!vault/.gitkeep
+
+# Runtime vault
+vault/
 
 # Logs (regenerated at runtime)
-Logs/*
-!Logs/.gitkeep
+Logs/
 
-# Plan files (generated at runtime)
-Plan/*
-!Plan/.gitkeep
-
-# Pipeline folders (empty at start, populated at runtime)
-Done/*
-!Done/.gitkeep
-Approved/*
-!Approved/.gitkeep
-Pending_Approval/*
-!Pending_Approval/.gitkeep
+# Pipeline folders (runtime only)
+Done/
+Plan/
+Approved/
+Pending_Approval/
