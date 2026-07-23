@@ -233,6 +233,11 @@ def _extract_likes_from_notifications(page) -> list[dict]:
         page.goto(f"{IG_BASE_URL}/accounts/activity/", timeout=20000,
                    wait_until="domcontentloaded")
         time.sleep(5)
+
+        if "login" in page.url.lower():
+            log("Session expired — redirected to login page", "red")
+            return []
+
         _dismiss_popups(page)
         time.sleep(2)
 
@@ -489,6 +494,36 @@ def check_likes(page) -> int:
     return new_count
 
 
+# --- Cookie Restore ---
+COOKIES_FILE = SESSION_DIR / "cookies_backup.json"
+
+def _restore_cookies(pw_manager):
+    if not COOKIES_FILE.exists():
+        return False
+    try:
+        cookies = json.loads(COOKIES_FILE.read_text(encoding="utf-8"))
+        pw_manager.context.add_cookies(cookies)
+        log(f"Restored {len(cookies)} cookies")
+        return True
+    except Exception as e:
+        log(f"Cookie restore failed: {e}", "yellow")
+        return False
+
+
+def _is_logged_in(page):
+    try:
+        page.wait_for_selector('a[href*="direct"]', timeout=5000)
+        return True
+    except Exception:
+        pass
+    try:
+        page.wait_for_selector('svg[aria-label="Direct"]', timeout=3000)
+        return True
+    except Exception:
+        pass
+    return False
+
+
 # --- Standalone Mode ---
 def start_watcher(once=False):
     seen = _load_seen()
@@ -499,13 +534,31 @@ def start_watcher(once=False):
     ) as pw:
         page = pw.new_page()
 
+        _restore_cookies(pw)
+
         log("Navigating to Instagram...")
         page.goto(IG_BASE_URL, timeout=30000, wait_until="domcontentloaded")
         time.sleep(3)
         page.reload(wait_until="domcontentloaded")
         time.sleep(3)
 
+        if not _is_logged_in(page):
+            log("Not logged in — please log in manually in the browser window", "yellow")
+            log("Waiting 60s for login...", "yellow")
+            time.sleep(60)
+            page.reload(wait_until="domcontentloaded")
+            time.sleep(3)
+
         _dismiss_popups(page)
+
+        if _is_logged_in(page):
+            try:
+                cookies = pw.context.cookies()
+                COOKIES_FILE.write_text(json.dumps(cookies, indent=2), encoding="utf-8")
+                log(f"Saved {len(cookies)} cookies", "green")
+            except Exception:
+                pass
+
         ok("Ready")
 
         if once:
