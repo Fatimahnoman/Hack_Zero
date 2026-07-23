@@ -1,6 +1,6 @@
 # 🤖 Gold Tier — AI Employee
 
-> Your personal AI assistant that handles Instagram DMs & Likes for you.
+> Your personal AI assistant that handles Instagram DMs, Likes & Mentions for you.
 
 ---
 
@@ -8,6 +8,7 @@
 
 - 🔍 Monitors Instagram DMs 24/7
 - ❤️ Detects new likes on your posts 24/7
+- @️ Detects new mentions on your posts 24/7
 - 🧠 Detects important messages using keywords
 - ✍️ Drafts professional replies automatically
 - ✅ Sends only after YOUR approval
@@ -25,7 +26,7 @@ pip install -r requirements.txt
 playwright install chromium
 ```
 
-### 2. Run Agent (DM + Like Watcher)
+### 2. Run Agent (DM + Like + Mention Watcher)
 
 ```bash
 python golden_tier_external_world/agent_instagram.py
@@ -77,6 +78,19 @@ python golden_tier_external_world/approve.py approve <filename>
 | 📁 Logged | Like saved as `.md` file with username + post URL |
 | 🔄 Dedup | Same like never logged twice |
 
+### Mention Watcher
+
+```
+@️ Someone mentions you → 📥 Saved to Inbox/ → ✍️ AI generates Thank You Reply
+```
+
+| Step | What Happens |
+|------|--------------|
+| @️ Mention Detected | Agent checks notifications every cycle |
+| 📥 Saved | Mention saved to `Inbox/` with username + caption |
+| ✍️ AI Reply | Orchestrator generates a Thank You reply |
+| ✅ Approved | You review and approve before sending |
+
 ---
 
 ## 🛠️ Tech Stack
@@ -94,7 +108,7 @@ python golden_tier_external_world/approve.py approve <filename>
 
 | Folder | Purpose |
 |--------|---------|
-| 📥 Inbox/ | New DMs land here |
+| 📥 Inbox/ | New DMs + Mentions land here |
 | ❤️ Likes/ | Like events logged here |
 | 📋 Plan/ | Action plans |
 | ✍️ Pending_Approval/ | Drafts awaiting your review |

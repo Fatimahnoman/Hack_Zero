@@ -16,6 +16,7 @@ from golden_tier_external_world.config.settings import WatcherConfig
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "experimental"))
 from instagram_like_watcher import check_likes
+from instagram_mention_watcher import check_mentions
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SESSION_DIR = BASE_DIR / "golden_tier_external_world" / "session" / "instagram"
@@ -531,6 +532,13 @@ def main():
                         check_likes(page)
                     except Exception as e:
                         log(f"Like check error: {e}", "yellow")
+
+                # Mention check every cycle (HIGH priority)
+                if cycle % 1 == 0:
+                    try:
+                        check_mentions(page)
+                    except Exception as e:
+                        log(f"Mention check error: {e}", "yellow")
 
                 time.sleep(5)
 
