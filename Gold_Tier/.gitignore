@@ -24,9 +24,3 @@ vault/
 
 # Logs (regenerated at runtime)
 Logs/
-
-# Pipeline folders (runtime only)
-Done/
-Plan/
-Approved/
-Pending_Approval/
