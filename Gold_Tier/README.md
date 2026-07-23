@@ -1,12 +1,13 @@
 # 🤖 Gold Tier — AI Employee
 
-> Your personal AI assistant that handles Instagram DMs for you.
+> Your personal AI assistant that handles Instagram DMs & Likes for you.
 
 ---
 
 ## ✨ What It Does
 
 - 🔍 Monitors Instagram DMs 24/7
+- ❤️ Detects new likes on your posts 24/7
 - 🧠 Detects important messages using keywords
 - ✍️ Drafts professional replies automatically
 - ✅ Sends only after YOUR approval
@@ -24,7 +25,7 @@ pip install -r requirements.txt
 playwright install chromium
 ```
 
-### 2. Run Agent (Terminal 1)
+### 2. Run Agent (DM + Like Watcher)
 
 ```bash
 python golden_tier_external_world/agent_instagram.py
@@ -49,6 +50,8 @@ python golden_tier_external_world/approve.py approve <filename>
 
 ## 🔄 How It Works
 
+### DM Pipeline
+
 ```
 📩 DM Received → 📥 Inbox → 📋 Plan Drafted → ✍️ Reply Ready → ✅ Approved → 🚀 Sent!
 ```
@@ -62,6 +65,18 @@ python golden_tier_external_world/approve.py approve <filename>
 | ✅ Approved | You review and approve |
 | 🚀 Sent | DM delivered via Playwright |
 
+### Like Watcher
+
+```
+❤️ Someone likes your post → 📁 Logged to Likes/ folder
+```
+
+| Step | What Happens |
+|------|--------------|
+| ❤️ Like Detected | Agent checks notifications every 3rd cycle |
+| 📁 Logged | Like saved as `.md` file with username + post URL |
+| 🔄 Dedup | Same like never logged twice |
+
 ---
 
 ## 🛠️ Tech Stack
@@ -70,7 +85,7 @@ python golden_tier_external_world/approve.py approve <filename>
 |------|---------|
 | 🎭 Playwright | Browser automation |
 | 🐍 Python | Core language |
-| 📝 YAML | Data storage |
+| 📝 Markdown | Data storage |
 | 🔐 Session | Auto-login |
 
 ---
@@ -80,6 +95,7 @@ python golden_tier_external_world/approve.py approve <filename>
 | Folder | Purpose |
 |--------|---------|
 | 📥 Inbox/ | New DMs land here |
+| ❤️ Likes/ | Like events logged here |
 | 📋 Plan/ | Action plans |
 | ✍️ Pending_Approval/ | Drafts awaiting your review |
 | ✅ Approved/ | Ready to send |
