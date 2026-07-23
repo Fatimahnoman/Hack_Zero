@@ -677,20 +677,42 @@ def main():
     print(f"\n  {c('⚙', 'cyan')} {c('AI Employee Orchestrator (continuous)', 'cyan')}\n")
 
     log("Starting continuous pipeline (every 5s)...", "cyan")
-    while True:
-        try:
-            process_inbox()
-            process_needs_action()
-            process_approved()
+    try:
+        while True:
+            try:
+                process_inbox()
+                process_needs_action()
+                process_approved()
 
-            _update_dashboard()
-            time.sleep(5)
-        except KeyboardInterrupt:
-            log("\nStopped by user")
-            break
-        except Exception as e:
-            log(f"Pipeline error: {e}", "red")
-            time.sleep(5)
+                _update_dashboard()
+                time.sleep(5)
+            except KeyboardInterrupt:
+                raise
+            except Exception as e:
+                log(f"Pipeline error: {e}", "red")
+                time.sleep(5)
+    except KeyboardInterrupt:
+        log("\nStopped by user")
+    finally:
+        try:
+            if _shared_tab.get("page"):
+                _shared_tab["page"].close()
+        except Exception:
+            pass
+        try:
+            if _shared_tab.get("context"):
+                _shared_tab["context"].close()
+        except Exception:
+            pass
+        try:
+            if _shared_tab.get("pw"):
+                _shared_tab["pw"].stop()
+        except Exception:
+            pass
+        _shared_tab["pw"] = None
+        _shared_tab["page"] = None
+        _shared_tab["browser"] = None
+        _shared_tab["context"] = None
 
     print(f"\n  {c('✓', 'green')} {c('Orchestrator stopped', 'green')}\n")
 

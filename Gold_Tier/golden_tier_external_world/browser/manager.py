@@ -99,7 +99,14 @@ class PlaywrightManager:
         if not self._running:
             return
         self._logger.info("Stopping browser manager")
-        self._close()
+        try:
+            self._close()
+        except Exception as e:
+            self._logger.warning("Error during stop | error=%s", e)
+            self._context = None
+            self._browser = None
+            self._playwright = None
+            self._running = False
 
     def restart(self) -> None:
         self._logger.info("Restarting browser manager")
@@ -317,10 +324,17 @@ class PlaywrightManager:
     def _close(self) -> None:
         if self._chrome_process:
             try:
-                self._chrome_process.kill()
-                self._chrome_process.wait(timeout=5)
+                self._chrome_process.terminate()
+                try:
+                    self._chrome_process.wait(timeout=8)
+                except Exception:
+                    self._chrome_process.kill()
+                    try:
+                        self._chrome_process.wait(timeout=5)
+                    except Exception:
+                        pass
             except Exception as e:
-                self._logger.warning("Error killing Chrome process | error=%s", e)
+                self._logger.warning("Error closing Chrome process | error=%s", e)
             self._chrome_process = None
 
         try:

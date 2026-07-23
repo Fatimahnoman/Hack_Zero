@@ -14,6 +14,9 @@ from golden_tier_external_world.browser import PlaywrightManager
 from golden_tier_external_world.config.enums import PlatformType, EventType as Et
 from golden_tier_external_world.config.settings import WatcherConfig
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "experimental"))
+from instagram_like_watcher import check_likes
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 SESSION_DIR = BASE_DIR / "golden_tier_external_world" / "session" / "instagram"
 COOKIES_FILE = SESSION_DIR / "cookies_backup.json"
@@ -458,11 +461,15 @@ def main():
 
         log("Starting continuous monitoring (every 5s)...", "cyan")
         thread_info = {}
+        cycle = 0
         while True:
             try:
+                cycle += 1
                 thread_info.clear()
                 seen = _load_seen()
 
+                # DM check
+                log(f"[{cycle}] Checking DMs...", "cyan")
                 page.goto(f"{IG_BASE_URL}/direct/inbox/", timeout=30000, wait_until='domcontentloaded')
                 time.sleep(5)
                 _dismiss_popups(page)
@@ -515,7 +522,15 @@ def main():
                             log(f"Error: {e}", "red")
                             continue
                 else:
-                    time.sleep(1)
+                    log("No unread DMs", "yellow")
+
+                # Like check every 3 cycles
+                if cycle % 3 == 0:
+                    log(f"[{cycle}] Checking likes...", "cyan")
+                    try:
+                        check_likes(page)
+                    except Exception as e:
+                        log(f"Like check error: {e}", "yellow")
 
                 time.sleep(5)
 
@@ -534,7 +549,10 @@ def main():
         if endpoint_file.exists():
             endpoint_file.unlink()
             log("Browser endpoint removed", "green")
-        browser.stop()
+        try:
+            browser.stop()
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":
