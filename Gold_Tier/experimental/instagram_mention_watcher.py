@@ -64,7 +64,10 @@ def fail(msg):
 def _load_seen() -> dict:
     if SEEN_FILE.exists():
         try:
-            return json.loads(SEEN_FILE.read_text(encoding="utf-8"))
+            data = json.loads(SEEN_FILE.read_text(encoding="utf-8"))
+            if isinstance(data, list):
+                return {"seen_keys": data}
+            return data
         except Exception:
             pass
     return {"seen_keys": []}
@@ -80,18 +83,50 @@ def _make_key(username: str, post_url: str) -> str:
     return hashlib.md5(raw.encode("utf-8")).hexdigest()[:12]
 
 
+def _make_user_key(username: str) -> str:
+    return f"user_{username.lower()}"
+
+
 def _is_seen(username: str, post_url: str, seen: dict) -> bool:
-    return _make_key(username, post_url) in seen.get("seen_keys", [])
+    key = _make_key(username, post_url)
+    user_key = _make_user_key(username)
+    seen_keys = seen.get("seen_keys", [])
+    if key in seen_keys or user_key in seen_keys:
+        return True
+    if _inbox_has_pending(username):
+        return True
+    return False
 
 
 def _mark_seen(username: str, post_url: str, seen: dict):
-    key = _make_key(username, post_url)
     keys = seen.setdefault("seen_keys", [])
+    key = _make_key(username, post_url)
+    user_key = _make_user_key(username)
+    changed = False
     if key not in keys:
         keys.append(key)
+        changed = True
+    if user_key not in keys:
+        keys.append(user_key)
+        changed = True
+    if changed:
         if len(keys) > 2000:
             seen["seen_keys"] = keys[-2000:]
         _save_seen(seen)
+
+
+def _inbox_has_pending(username: str) -> bool:
+    if not INBOX_DIR.exists():
+        return False
+    username_lower = username.lower()
+    for f in INBOX_DIR.glob("Instagram-Mention-*.md"):
+        try:
+            content = f.read_text(encoding="utf-8")
+            if f"mentioned_by: {username_lower}" in content.lower() and "status: pending" in content.lower():
+                return True
+        except Exception:
+            continue
+    return False
 
 
 # --- Event Logging ---
