@@ -140,25 +140,33 @@ def _log_event(username: str, caption: str, post_url: str) -> Path:
     filepath = INBOX_DIR / filename
 
     content = f"""---
-# Instagram Mention Event
-
+event_id: insta_mention_{event_id}
 type: MENTION
-
 platform: instagram
+thread_id: "mention_{username}"
+
+from:
+  username: "{username}"
+  display_name: "{username}"
 
 mentioned_by: {username}
 
 caption: {caption}
 
+message: "{caption}"
+
 post_url: "{post_url}"
 
 priority: HIGH
 
+keywords:
+  - mention
+
+received_at: "{received}"
+
 AI Decision: Generate Thank You Reply
 
 Reason: Someone mentioned you in their post/comment. Generate a polite thank you reply.
-
-received: {received}
 
 status: pending
 ---"""

@@ -321,17 +321,26 @@ def _generate_plan(source_file: Path, data: dict) -> Path:
     plans_dir.mkdir(parents=True, exist_ok=True)
     plan_id = _generate_plan_id()
     msg = data.get("message", "")
-    intent = _classify_intent(msg)
-    priority = _determine_priority(msg)
+    event_type = data.get("type", "direct_message")
+    intent = _classify_intent(msg) if event_type != "MENTION" else "General Inquiry"
+    priority = data.get("priority", _determine_priority(msg))
     ts = _now_ts()
-    stem = source_file.stem.replace("Instagram-DM-", "Plan-Insta-DM-")
+    if event_type == "MENTION":
+        stem = source_file.stem.replace("Instagram-Mention-", "Plan-Insta-Mention-")
+    else:
+        stem = source_file.stem.replace("Instagram-DM-", "Plan-Insta-DM-")
     plan_file = plans_dir / f"{stem}.md"
+
+    mention_extra = ""
+    if event_type == "MENTION":
+        mention_extra = f"- **Mentioned In:** {data.get('post_url', 'unknown')}\n- **Caption:** {data.get('caption', msg)}\n"
 
     content = f"""---
 plan_id: {plan_id}
 created_at: {ts}
 source_file: {source_file.name}
 event_id: {data.get('event_id', 'unknown')}
+event_type: {event_type}
 thread_id: {data.get('thread_id', 'unknown')}
 from_username: "{data.get('username', 'unknown')}"
 from_display: "{data.get('display_name', 'unknown')}"
@@ -342,31 +351,40 @@ status: active
 ---
 
 ## Analysis
+- **Event Type:** {event_type}
 - **Intent Classified:** {intent}
 - **Priority Level:** {priority}
 - **Sender:** @{data.get('username', 'unknown')} ({data.get('display_name', 'unknown')})
 - **Original Message:** "{msg}"
-
+{mention_extra}
 ## Proposed Actions
-1. Acknowledge receipt of the message
-2. Analyze the request and prepare appropriate response
-3. Draft reply based on intent classification
-4. Send reply via Instagram DM
-5. Follow up if needed
+1. {"Generate a polite thank you reply for the mention" if event_type == "MENTION" else "Acknowledge receipt of the message"}
+2. {"Post comment reply on the post" if event_type == "MENTION" else "Analyze the request and prepare appropriate response"}
+3. {"Follow up if needed" if event_type == "MENTION" else "Draft reply based on intent classification"}
 
 ## Success Criteria
-- Reply sent within the agreed SLA
-- Sender receives a helpful and relevant response
-- Issue resolved or appropriately escalated
+- {"Thank you reply posted on the mention" if event_type == "MENTION" else "Reply sent within the agreed SLA"}
+- Sender feels acknowledged and appreciated
 """
     plan_file.write_text(content.strip(), encoding="utf-8")
     return plan_file
 
 def _generate_draft_reply(data: dict) -> str:
     msg = data.get("message", "")
-    intent = _classify_intent(msg)
-    priority = _determine_priority(msg)
+    event_type = data.get("type", "direct_message")
+    intent = _classify_intent(msg) if event_type != "MENTION" else "General Inquiry"
+    priority = data.get("priority", _determine_priority(msg))
     sender_name = data.get("display_name", data.get("username", "there"))
+
+    if event_type == "MENTION":
+        thank_yous = [
+            f"Hey {sender_name}! Thanks so much for the mention — really appreciate the love! 🙌",
+            f"Hi {sender_name}! Just saw your mention, thanks for thinking of me! Means a lot.",
+            f"Hey! Thanks for the shoutout {sender_name} — appreciate you! 🙏",
+            f"Hi {sender_name}! Love the mention, thanks for sharing! Glad you liked it.",
+            f"Thanks for the mention {sender_name}! Always great to connect with awesome people like you.",
+        ]
+        return random.choice(thank_yous)
 
     topics = _extract_topics(msg)
     topic_phrase = ""
